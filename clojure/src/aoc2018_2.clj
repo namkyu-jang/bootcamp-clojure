@@ -1,4 +1,5 @@
-(ns aoc2018-2)
+(ns aoc2018-2
+  (:require [clojure.java.io :as io]))
 
 ;; 파트 1
 ;; 주어진 각각의 문자열에서, 같은 문자가 두번 혹은 세번씩 나타난다면 각각을 한번씩 센다.
@@ -13,6 +14,32 @@
 ;; ababab 3개의 a, 3개의 b 지만 한 문자열에서 같은 갯수는 한번만 카운트함 -> (두번 나오는 문자열 수: 4, 세번 나오는 문자열 수: 3)
 ;; 답 : 4 * 3 = 12
 
+(def lines (->> "resources/day2_small_input.txt"
+                (slurp)
+                (clojure.string/split-lines)))
+
+(def freq-list (->> ;"resources/day2_small_input.txt"
+                 "resources/day2_input.txt"
+                 (slurp)
+                 (clojure.string/split-lines)
+                 (map frequencies)))
+
+freq-list
+
+(def counter-map (reduce
+                   (fn [counter freq]
+                     (let [counter-tmp counter
+                           count-values (vals freq)
+                           two-exists (some #(= % 2) count-values)
+                           counter-tmp (if two-exists (assoc counter-tmp :two (inc (:two counter-tmp))) counter-tmp)
+                           three-exists (some #(= % 3) count-values)
+                           counter-tmp (if three-exists (assoc counter-tmp :three (inc (:three counter-tmp))) counter-tmp)]
+                       counter-tmp))
+                   {:two 0 :three 0}
+                   freq-list))
+counter-map
+
+(* (:two counter-map) (:three counter-map))
 
 ;; 파트 2
 ;; 여러개의 문자열 중, 같은 위치에 정확히 하나의 문자가 다른 문자열 쌍에서 같은 부분만을 리턴하시오.
