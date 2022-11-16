@@ -24,8 +24,25 @@ sum
 ;; 예) +3, +3, +4, -2, -4 는 10이 처음으로 두번 나오는 숫자임.
 ;; 0 -> 3 (+3) -> 6 (+3) -> 10(+4) -> 8(-2) -> 4(-4) -> 7(+3) -> 10(+3) -> ...
 
-(def numbers (->> "resources/day1_input.txt"
+(def numbers (->> ;"resources/day1_small_input.txt"
+                  "resources/day1_input.txt"
                   (slurp)
                   (clojure.string/split-lines)
                   (map parse-long)))
+numbers
 
+(defn find-num [numbers]
+  (loop [nums numbers
+         sum 0
+         results #{}]
+    (let [nums (if (empty? nums) numbers nums)  ; coll이 비었으면 다시 반복
+          sum (+ sum (first nums))]
+      (if (contains? results sum)
+        sum
+        (recur
+          (rest nums)
+          sum
+          (conj results sum))))))
+
+
+(find-num numbers)
