@@ -31,18 +31,48 @@ sum
                   (map parse-long)))
 numbers
 
-(defn find-num [numbers]
+(defn find-num1 [numbers]
   (loop [nums numbers
          sum 0
          results #{}]
     (let [nums (if (empty? nums) numbers nums)  ; coll이 비었으면 다시 반복
           sum (+ sum (first nums))]
-      (if (contains? results sum)
+      (if (results sum) ;(contains? results sum)
         sum
         (recur
           (rest nums)
           sum
           (conj results sum))))))
 
+(find-num1 numbers)
 
-(find-num numbers)
+
+;; reduced + atom
+(defn find-num2 [numbers]
+  (let [sum (atom 0)]
+    (reduce
+      (fn [results number]
+        (reset! sum (+ @sum number))
+        (if (results @sum)
+          (reduced @sum)
+          (conj results @sum)))
+      #{}
+      (cycle numbers))))
+
+(find-num2 numbers)
+
+
+; reduce
+(defn find-num3 [numbers]
+  (reduce
+    (fn [acc number]
+      (let [sum (+ (:sum acc) number)
+            results (:results acc)]
+        (if (results sum)
+          (reduced sum)
+          {:sum sum
+           :results (conj results sum)})))
+    {:sum 0 :results #{}}
+    (cycle numbers)))
+
+(find-num3 numbers)
