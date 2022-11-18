@@ -65,9 +65,8 @@ freq-numbers
 ; reduce
 (defn find-num3 [numbers]
   (reduce
-    (fn [acc number]
-      (let [sum (+ (:sum acc) number)
-            results (:results acc)]
+    (fn [{:keys [sum results]} number]
+      (let [sum (+ sum number)]
         (if (results sum)
           (reduced sum)
           {:sum sum
