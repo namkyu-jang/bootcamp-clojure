@@ -15,57 +15,81 @@
 ;; ababab 3개의 a, 3개의 b 지만 한 문자열에서 같은 갯수는 한번만 카운트함 -> (두번 나오는 문자열 수: 4, 세번 나오는 문자열 수: 3)
 ;; 답 : 4 * 3 = 12
 
+(defn freq-char [string]
+  (reduce
+    (fn [acc c]
+      (assoc acc c (inc (get acc c 0))))
+    {}
+    string))
+(freq-char "abca") ; {\a 2, \b 1, \c 1}
+
+
 (def freq-list (->> ;"resources/day2_small_input.txt"
                  "resources/day2_input.txt"
                  (slurp)
                  (clojure.string/split-lines)
-                 (map frequencies)))
+                 ;(map frequencies)
+                 (map freq-char)))
+
 freq-list
 
+
+(defn num-contains? [coll n]
+  (some #(= % n) coll))
+
+(contains? [1 2 3 4] 3)
+(contains? '(1 2 3 4) 3)
+
+
 ;; map 사용
-(def counter-map (reduce
-                   (fn [acc freq]
-                     (let [count-values (vals freq)
-                           count2 (:two acc)
-                           count3 (:three acc)
-                           inc2 (if (some #(= % 2) count-values) 1 0)
-                           inc3 (if (some #(= % 3) count-values) 1 0)]
-                       {:two (+ count2 inc2)
-                        :three (+ count3 inc3)}))
-                   {:two 0 :three 0}
-                   freq-list))
-counter-map
-(* (:two counter-map) (:three counter-map))
+(def freq-count-map
+  (reduce
+    (fn [acc freq-by-char]
+      (let [freq-vals (vals freq-by-char)
+            {:keys [sum2 sum3]} acc
+            inc2 (if (num-contains? freq-vals 2) 1 0)
+            inc3 (if (num-contains? freq-vals 3) 1 0)]
+        {:sum2 (+ sum2 inc2)
+         :sum3 (+ sum3 inc3)}))
+    {:sum2 0 :sum3 0}
+    freq-list))
+
+freq-count-map
+(let [{:keys [sum2 sum3]} freq-count-map]
+  (* sum2 sum3))
+
 
 ;; vector -> reduce
-(def freq-pair (->> ;"resources/day2_small_input.txt"
-                     "resources/day2_input.txt"
-                     (slurp)
-                     (clojure.string/split-lines)
-                     (map frequencies)
-                     (map vals)
-                     (map (fn [freqs]
-                            [(if (some #(= % 2) freqs) 1 0)
-                             (if (some #(= % 3) freqs) 1 0)]))
-                     (reduce (fn [acc freq]
-                               [(+ (first acc) (first freq))
-                                (+ (last acc) (last freq))]))))
+(def freq-pair
+  (->> ;"resources/day2_small_input.txt"
+        "resources/day2_input.txt"
+        (slurp)
+        (clojure.string/split-lines)
+        (map freq-char)                             ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
+        (map vals)                                  ; (1 1 1 1 1 1) (3 2 1) ...
+        (map (fn [freq-by-char]                     ; (0 0) (1 1) (1 0) ...
+               [(if (num-contains? freq-by-char 2) 1 0)
+                (if (num-contains? freq-by-char 3) 1 0)]))
+        (reduce (fn [[sum2 sum3] [count2 count3]]
+                  [(+ sum2 count2)
+                   (+ sum3 count3)]))))
 
-(* (first freq-pair) (last freq-pair))
+(let [[count2 count3] freq-pair]
+  (* count2 count3))
+
 
 ;; vector -> map +
-(def freq-pair (->> ;"resources/day2_small_input.txt"
-                    "resources/day2_input.txt"
-                    (slurp)
-                    (clojure.string/split-lines)
-                    (map frequencies)                         ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
-                    (map vals)                                ; (1 1 1 1 1 1) (3 2 1) ...
-                    (map (fn [freqs]                          ; (0 0) (1 1) (1 0) ...
-                           [(if (some #(= % 2) freqs) 1 0)
-                            (if (some #(= % 3) freqs) 1 0)]))
-                    (apply map +)                             ; (4 3)
-                    (apply *)))                               ; 4 * 3 = 12
-freq-pair
+(->> ;"resources/day2_small_input.txt"
+     "resources/day2_input.txt"
+     (slurp)
+     (clojure.string/split-lines)
+     (map freq-char)                           ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
+     (map vals)                                ; (1 1 1 1 1 1) (3 2 1) ...
+     (map (fn [freq-by-char]                   ; (0 0) (1 1) (1 0) ...
+            [(if (num-contains? freq-by-char 2) 1 0)
+             (if (num-contains? freq-by-char 3) 1 0)]))
+     (apply map +)                             ; (4 3)
+     (apply *))                               ; 4 * 3 = 12
 
 
 (map + [0 1] [1 2] [2 3])
@@ -93,6 +117,112 @@ freq-pair
 (compare 'a' 'c')
 (seq (char-array "asdf"))
 
+(defn find-1distance-pair [string-coll]
+  (reduce
+    (fn [acc string]
+      (println "acc: " acc ", string: " string)
+      (rest acc))
+    (rest string-coll)
+    string-coll))
+(find-1distance-pair '("aaa" "abc" "aac" "aab"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn distance1? [s1 s2]
+  (let [distance (reduce
+                   (fn [distance-sum strings]
+                     (println "strings: " strings)
+                     (let [s1 (first strings)
+                           s2 (last strings)
+                           ;c1 (first s1)
+                           ;c2 (first s2)
+                           ;distance (abs (- (int (first s1)) (int (first s2))))
+                           distance 0
+                           distance-sum (+ distance-sum distance)]
+                       (println "s1: " s1 ", s2: " s2)
+                       ;(println "c1: " c1 ", c2: " c2)
+                       distance-sum))
+                   0
+                   [s1 s2])]
+    (= distance 1)))
+
+(distance1? "aaa" "aaa")
+(distance1? "aaa" "aab")
+
+(->> (char-array "aaa")
+     (seq)
+     (first))
+
+(doseq [i (range (count "asdf"))]
+  (doseq))
+
+(- (int \a) (int \b))
+
+(first "asedf")
+(class (rest "asedf"))
+
+(defn find-1distance-pair [string-coll]
+  (reduce
+    (fn [acc string]
+      (println "acc: " acc ", string: " string)
+      (for [s acc]
+        (println "-----------------" s))
+
+      (rest acc))
+    (rest string-coll)
+    string-coll))
+(find-1distance-pair '("aaa" "abc" "aac" "aab"))
+
+
+(for [s '("aaa" "abc" "aac" "aab")]
+  (println "-----------------" s))
+
+(if (distance1? s string)
+  (reduced [s string])
+  (println "s: " s ", string: " string))
+
+(let [s1 string
+      s2 (first acc)
+      chars1 (char-array s1)
+      chars2 (char-array s2)]
+  (println "s1: " s1 ", s2: " s2))
+
+((fn [acc string]
+   (println "acc: " acc ", string: " string)
+   (for [s acc]
+     (println "-----------------" s))) '("aaa" "abc" "aac" "aab") "123")
+
+;(for [s '("aaa" "abc" "aac" "aab")]
+;  (println s))
+;
+;(defn find-1distance [strings]
+;  (for [s1 strings s2 strings]
+;    (println s1 " - " s2)))
+;(find-1distance ["aaa" "aab"])
+
+
+
 ;; #################################
 ;; ###        Refactoring        ###
 ;; #################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
