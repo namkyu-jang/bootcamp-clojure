@@ -34,8 +34,15 @@
 freq-list
 
 
-(defn num-contains? [coll n]
-  (some #(= % n) coll))
+(defn num-contains? [n coll]
+  (if (some #(= % n) coll) true false))
+
+(num-contains? 3 [1 2 3 4])
+(num-contains? 3 '(1 2 3 4))
+(num-contains? 5 '(1 2 3 4))
+
+(def contains-two? (partial num-contains? 2))
+(def contains-three? (partial num-contains? 3))
 
 (contains? [1 2 3 4] 3)
 (contains? '(1 2 3 4) 3)
@@ -104,8 +111,8 @@ freq-count-map
      (map freq-char)                           ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
      (map vals)                                ; (1 1 1 1 1 1) (3 2 1) ...
      (map (fn [freq-by-char]                   ; (0 0) (1 1) (1 0) ...
-            [(if (num-contains? freq-by-char 2) 1 0)
-             (if (num-contains? freq-by-char 3) 1 0)]))
+            [(bool-to-int (contains-two? freq-by-char))
+             (bool-to-int (contains-three? freq-by-char))]))
      (apply map +)                             ; (4 3)
      (apply *))                               ; 4 * 3 = 12
 ; juxt를 사용할 경우 boolean -> int로 변경하는 함수가 별도로 필요하고, list 안의 vector를 int로 가공해 주는 절차가 필요해서 메트리가 없어 보임.
