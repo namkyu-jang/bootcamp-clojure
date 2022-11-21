@@ -40,6 +40,11 @@ freq-list
 (contains? [1 2 3 4] 3)
 (contains? '(1 2 3 4) 3)
 
+(defn bool-to-int [b]
+  (if b 1 0))
+(bool-to-int true)
+(bool-to-int false)
+
 
 ;; map 사용
 (def freq-count-map
@@ -47,8 +52,8 @@ freq-list
     (fn [acc freq-by-char]
       (let [freq-vals (vals freq-by-char)
             {:keys [sum2 sum3]} acc
-            inc2 (if (num-contains? freq-vals 2) 1 0)
-            inc3 (if (num-contains? freq-vals 3) 1 0)]
+            inc2 (if (num-contains? 2 freq-vals) 1 0)
+            inc3 (if (num-contains? 3 freq-vals) 1 0)]
         {:sum2 (+ sum2 inc2)
          :sum3 (+ sum3 inc3)}))
     {:sum2 0 :sum3 0}
@@ -68,8 +73,8 @@ freq-count-map
         (map freq-char)                             ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
         (map vals)                                  ; (1 1 1 1 1 1) (3 2 1) ...
         (map (fn [freq-by-char]                     ; (0 0) (1 1) (1 0) ...
-               [(if (num-contains? freq-by-char 2) 1 0)
-                (if (num-contains? freq-by-char 3) 1 0)]))
+               [(if (num-contains? 2 freq-by-char) 1 0)
+                (if (num-contains? 3 freq-by-char) 1 0)]))
         (reduce (fn [[sum2 sum3] [count2 count3]]
                   [(+ sum2 count2)
                    (+ sum3 count3)]))))
@@ -77,6 +82,19 @@ freq-count-map
 (let [[count2 count3] freq-pair]
   (* count2 count3))
 
+
+;; vector -> map +
+(->> ;"resources/day2_small_input.txt"
+  "resources/day2_input.txt"
+  (slurp)
+  (clojure.string/split-lines)
+  (map freq-char)                           ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
+  (map vals)                                ; (1 1 1 1 1 1) (3 2 1) ...
+  (map (fn [freq-by-char]                   ; (0 0) (1 1) (1 0) ...
+         [(if (contains-two? freq-by-char) 1 0)
+          (if (contains-three? freq-by-char) 1 0)]))
+  (apply map +)                             ; (4 3)
+  (apply *))                                ; 4 * 3 = 12
 
 ;; vector -> map +
 (->> ;"resources/day2_small_input.txt"
@@ -90,6 +108,7 @@ freq-count-map
              (if (num-contains? freq-by-char 3) 1 0)]))
      (apply map +)                             ; (4 3)
      (apply *))                               ; 4 * 3 = 12
+; juxt를 사용할 경우 boolean -> int로 변경하는 함수가 별도로 필요하고, list 안의 vector를 int로 가공해 주는 절차가 필요해서 메트리가 없어 보임.
 
 
 (map + [0 1] [1 2] [2 3])
@@ -111,93 +130,65 @@ freq-count-map
 
 ;; 주어진 예시에서 fguij와 fghij는 같은 위치 (2번째 인덱스)에 정확히 한 문자 (u와 h)가 다름. 따라서 같은 부분인 fgij를 리턴하면 됨.
 
-;; 숫자로 만들어 차이를 구해서 차이가 1이면, 다시 한 번 차이가 0인 것만 반환
 
-;; string comparisons give results of the distance between the first characters
-(compare 'a' 'c')
-(seq (char-array "asdf"))
+; "asdf" "1234" => [(a 1) (b 2) (c 3) ...] 변환할 수 있어야
+(map list [1 2 3] [4 5 6])     ; ((1 4) (2 5) (3 6))
+(map list '(1 2 3) '(4 5 6))   ; ((1 4) (2 5) (3 6))
+(map vector '(1 2 3) '(4 5 6)) ; ([1 4] [2 5] [3 6])
+(map vector [1 2 3] [4 5 6])   ; ([1 4] [2 5] [3 6])
+(map vector "asdf" "qwer")     ; ([\a \q] [\s \w] [\d \e] [\f \r])
 
-(defn find-1distance-pair [string-coll]
+(defn count-diff-chars [[s1 s2]]
   (reduce
-    (fn [acc string]
-      (println "acc: " acc ", string: " string)
-      (rest acc))
-    (rest string-coll)
-    string-coll))
-(find-1distance-pair '("aaa" "abc" "aac" "aab"))
+    (fn [sum [c1 c2]]
+      (+ sum (if (= c1 c2) 0 1)))
+    0
+    (map vector s1 s2)))
+(count-diff-chars ["aaa" "aaa"]) ; 0
+(count-diff-chars ["aaa" "aab"]) ; 1
+(count-diff-chars ["aaa" "abc"]) ; 2
+(count-diff-chars ["aaa" "bbb"]) ; 3
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn distance1? [s1 s2]
-  (let [distance (reduce
-                   (fn [distance-sum strings]
-                     (println "strings: " strings)
-                     (let [s1 (first strings)
-                           s2 (last strings)
-                           ;c1 (first s1)
-                           ;c2 (first s2)
-                           ;distance (abs (- (int (first s1)) (int (first s2))))
-                           distance 0
-                           distance-sum (+ distance-sum distance)]
-                       (println "s1: " s1 ", s2: " s2)
-                       ;(println "c1: " c1 ", c2: " c2)
-                       distance-sum))
-                   0
-                   [s1 s2])]
-    (= distance 1)))
+(let [coll ["a" "b" "c"]]
+  (.indexOf coll "c")) ; 2
 
-(distance1? "aaa" "aaa")
-(distance1? "aaa" "aab")
 
-(->> (char-array "aaa")
-     (seq)
-     (first))
+(defn seq-cartesian-strings [strings]
+  (for [s1 strings
+        s2 strings
+        :let [s1-index (.indexOf strings s1)
+              s2-index (.indexOf strings s2)]
+        :when (< s1-index s2-index)]
+    [s1 s2]))
+(seq-cartesian-strings '("aa" "bb" "cc"))  ; (["aa" "bb"] ["aa" "cc"] ["bb" "cc"])
 
-(doseq [i (range (count "asdf"))]
-  (doseq))
-
-(- (int \a) (int \b))
-
-(first "asedf")
-(class (rest "asedf"))
-
-(defn find-1distance-pair [string-coll]
+(defn only-matched-chars [[s1 s2]]
   (reduce
-    (fn [acc string]
-      (println "acc: " acc ", string: " string)
-      (for [s acc]
-        (println "-----------------" s))
+    (fn [acc [c1 c2]]
+      (if (= c1 c2)
+        (str acc c1)
+        acc))
+    nil
+    (map vector s1 s2)))
+(only-matched-chars ["$hello123" "#hello333"]) ; "hello3"
 
-      (rest acc))
-    (rest string-coll)
-    string-coll))
-(find-1distance-pair '("aaa" "abc" "aac" "aab"))
+(reduce
+  (fn [acc strings]
+    (if (= 1 (count-diff-chars strings))
+      (reduced (only-matched-chars strings))
+      nil))
+  (seq-cartesian-strings '("abcde" "fghij" "klmno" "pqrst" "fguij" "axcye" "wvxyz")))
 
 
-(for [s '("aaa" "abc" "aac" "aab")]
-  (println "-----------------" s))
-
-(if (distance1? s string)
-  (reduced [s string])
-  (println "s: " s ", string: " string))
-
-(let [s1 string
-      s2 (first acc)
-      chars1 (char-array s1)
-      chars2 (char-array s2)]
-  (println "s1: " s1 ", s2: " s2))
-
-((fn [acc string]
-   (println "acc: " acc ", string: " string)
-   (for [s acc]
-     (println "-----------------" s))) '("aaa" "abc" "aac" "aab") "123")
-
-;(for [s '("aaa" "abc" "aac" "aab")]
-;  (println s))
-;
-;(defn find-1distance [strings]
-;  (for [s1 strings s2 strings]
-;    (println s1 " - " s2)))
-;(find-1distance ["aaa" "aab"])
+(->>
+  '("abcde" "fghij" "klmno" "pqrst" "fguij" "axcye" "wvxyz")
+  ;"resources/day2_input.txt" (slurp) (clojure.string/split-lines)
+  (seq-cartesian-strings)                         ; (["aa" "bb"] ["aa" "cc"] ["bb" "cc"] ... )
+  (map (fn [strings]                              ; (nil nil "abcd" ...)
+         (when (= 1 (count-diff-chars strings))
+           (only-matched-chars strings))))
+  (filter (complement nil?))                      ; "abcd" ...
+  (first))
 
 
 
