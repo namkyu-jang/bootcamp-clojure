@@ -111,6 +111,9 @@ freq-count-map
      (map freq-char)                           ; {\a 1, \b 1, \c 1, \d 1, \e 1, \f 1} ...
      (map vals)                                ; (1 1 1 1 1 1) (3 2 1) ...
      (map (fn [freq-by-char]                   ; (0 0) (1 1) (1 0) ...
+            ; (->> ((juxt contains-two? contains-three?) freq-by-char)) ; [true nil]
+            ;      (map bool-to-int)
+            ;      (into [])
             [(bool-to-int (contains-two? freq-by-char))
              (bool-to-int (contains-three? freq-by-char))]))
      (apply map +)                             ; (4 3)
@@ -177,7 +180,17 @@ freq-count-map
         acc))
     nil
     (map vector s1 s2)))
-(only-matched-chars ["$hello123" "#hello333"]) ; "hello3"
+
+(defn only-matched-chars-2 [[s1 s2]]
+  (->> (map vector s1 s2)
+       (keep (fn [[c1 c2]] (when (= c1 c2) c1)))
+       (apply str)))
+
+; (map (fn [[c1 c2]] (when (= c1 c2) c1))) ; [c1 nil...]
+; (keep identity)
+
+(comment
+  (only-matched-chars ["$hello123" "#hello333"])) ; "hello3")
 
 (reduce
   (fn [acc strings]
@@ -197,7 +210,11 @@ freq-count-map
   (filter (complement nil?))                      ; "abcd" ...
   (first))
 
+(def x (->> [1 2 3]
+            (map inc)
+            (filter even?)))
 
+;; lazy evaluation
 
 ;; #################################
 ;; ###        Refactoring        ###
