@@ -82,42 +82,45 @@
 (comment
   (gen-claimed-positions {:x 1 :y 4 :w 2 :h 3}))
 
-;(defn mark-claim [{:keys [id x y w h]} fabrics]
-;  (for [pos-x (range x (+ x w 1))
-;        pos-y (range y (+ y h 1))
-;        :let [count (get fabrics [pos-x pos-y] 0)]]
-;    {[pos-x pos-y] (inc count)}))
-;(comment
-;  (mark-claim {:id 1 :x 1 :y 4 :w 2 :h 2} {}))
+(defn add-positions
+  "claim에 :position을 추가한 {:id \"1\", :x 1, :y 3, :w 4, :h 4, :positions ([1 3] [1 4] ...)} 형태의 맵을 반환한다."
+  [claim]
+  (assoc claim :positions (gen-claimed-positions claim)))
+
+(defn mark-fabrics
+  "data structure: {:claims ({:id \"1\", :x 1, :y 1, :w 2, :h 2, :positions ([1 1] [1 2] ...)}...) :fabrics ({[1 3] 1, [1 4] 2, [1 5] 3, [2 3] 1, ...})}"
+  [claims]
+  (->> claims
+       (mapcat :positions)
+       (frequencies)
+       (#(assoc nil :claims claims :fabrics %))))
 
 (comment
-  (apply map println [[1 2 3] [4 5]])
-  (apply map println ["ab" "cd"])
-  (apply #(println % "-" %2) ["ab" "cd"])
-  (filter (fn [pair]
-            (println pair)
-            pair) {:a 1 :b 2}))
+  (->> '({:id "1", :x 1, :y 3, :w 4, :h 4,
+          :positions ([1 3] [1 4] [1 5] [1 6] [2 3] [2 4] [2 5] [2 6] [3 3] [3 4] [3 5] [3 6] [4 3] [4 4] [4 5] [4 6])}
+         {:id "2", :x 3, :y 1, :w 4, :h 4,
+          :positions ([3 1] [3 2] [3 3] [3 4] [4 1] [4 2] [4 3] [4 4] [5 1] [5 2] [5 3] [5 4] [6 1] [6 2] [6 3] [6 4])}
+         {:id "3", :x 5, :y 5, :w 2, :h 2,
+          :positions ([5 5] [5 6] [6 5] [6 6])})
+       (mark-fabrics)))
 
-(defn value-gt? [n [key val]]
-  (> val n))
-(def value-gt1? (partial value-gt? 1))
-
-(comment
-  (value-gt? 1 [:a 1])
-  (value-gxt? 1 [:a 2])
-  (value-gt1? [:a 1])
-  (value-gt1? [:a 2]))
-
-(comment
-  (->> ;"resources/day3_small_input.txt"
-       "resources/day3_input.txt"
+(defn load-claims
+  "data structure: {:claims ({:id \"1\", :x 1, :y 1, :w 2, :h 2, :positions ([1 1] [1 2] ...)}...) :fabrics ({[1 3] 1, [1 4] 2, [1 5] 3, [2 3] 1, ...})}"
+  [filename]
+  (->> filename
        (slurp)
        (clojure.string/split-lines)
        (map parse-claim)              ; ({:id "1", :x 1, :y 3, :w 4, :h 4} {:id "2", :x 2 ...}...)
-       (mapcat gen-claimed-positions) ; ([1 3] [1 4] [1 5] [2 3] [2 4] [2 5] [2 3] [2 4] ...
-       (frequencies)                  ; {[4 3] 2, [2 3] 1, [2 5] 1, ...
-       (filter value-gt1?)            ; ([[4 3] 2] [[3 3] 2] [[3 4] 2] [[4 4] 2])
-       (count)))
+       (map add-positions)            ; ({:id "1", :x 1, :y 3, :w 4, :h 4, :positions ([1 3] [1 4] [1 5]) ...
+       (mark-fabrics)))               ; {:claims ({:id "1", :x 1, :positions (...) ...} ...) :fabrics ({[1 3] 1, [1 4] 2, [1 5] 3, [2 3] 1, ...})}
+
+
+(comment
+  (->> (load-claims "resources/day3_small_input.txt") ; {:claims ({:id 1, :x 1, :y 1, :w 2, :h 2, :positions ([1 1] [1 2] ...)}...) :fabrics ({[1 3] 1, [1 4] 2, [1 5] 3, [2 3] 1, ...})}
+       (:fabrics)                     ; ({[1 3] 1, [1 4] 2, [1 5] 3, [2 3] 1, ...})
+       (vals)
+       (filter #(> % 1))
+       (count)))                      ; simple: 4, aoc: 110827
 
 
 
@@ -125,4 +128,40 @@
 ;; 입력대로 모든 격자를 채우고 나면, 정확히 한 ID에 해당하는 영역이 다른 어떤 영역과도 겹치지 않음
 ;; 위의 예시에서는 ID 3 이 ID 1, 2와 겹치지 않음. 3을 출력.
 ;; 겹치지 않는 영역을 가진 ID를 출력하시오. (문제에서 답이 하나만 나옴을 보장함)
+
+(defn find-not-overlapped-positions
+  "data structure: ([4 3] [2 3] ...)"
+  [fabrics]
+  (->> fabrics          ; {[4 3] 2, [2 3] 1, ...
+       (filter (fn [[_ val]] (= val 1)))
+       (map key)))      ; ([4 3] [2 3] ...
+
+(comment
+  (def claims-fabrics
+    {:claims '({:id "1", :x 1, :y 3, :w 4, :h 4,
+                :positions ([1 3] [1 4] [1 5] [1 6] [2 3] [2 4] [2 5] [2 6] [3 3] [3 4] [3 5] [3 6] [4 3] [4 4] [4 5] [4 6])}
+               {:id "2", :x 3, :y 1, :w 4, :h 4,
+                :positions ([3 1] [3 2] [3 3] [3 4] [4 1] [4 2] [4 3] [4 4] [5 1] [5 2] [5 3] [5 4] [6 1] [6 2] [6 3] [6 4])}
+               {:id "3", :x 5, :y 5, :w 2, :h 2,
+                :positions ([5 5] [5 6] [6 5] [6 6])}),
+     :fabrics {[4 3] 2, [2 3] 1, [2 5] 1, [3 3] 2, [5 4] 1, [6 3] 1, [3 4] 2, [4 2] 1, [6 6] 1, [5 3] 1, [6 5] 1, [4 1] 1, [5 2] 1, [4 6] 1, [1 4] 1, [1 3] 1, [1 5] 1, [6 4] 1, [5 1] 1, [6 1] 1, [5 6] 1, [5 5] 1, [2 4] 1, [3 6] 1, [4 5] 1, [3 1] 1, [1 6] 1, [4 4] 2, [2 6] 1, [6 2] 1, [3 5] 1, [3 2] 1}})
+  (find-not-overlapped-positions (:fabrics claims-fabrics)))
+
+
+(defn all-contains? [list full-list]
+  (clojure.set/subset? (set list) (set full-list)))
+
+(comment
+  (clojure.set/subset? (set '([1 1])) (set '([1 1] [2 3])))
+  (all-contains? '([1 1]) '([1 1] [2 3])))
+
+
+(comment
+  (let [{:keys [claims fabrics]} (load-claims "resources/day3_small_input.txt") ; "resources/day3_input.txt"
+        not-overlapped-positions (find-not-overlapped-positions fabrics)]
+    (->> claims                                        ; ({:id 1, :x 1, :y 1, :w 2, :h 2, :positions ([1 1] [1 2] ...)}...)
+         (filter #(all-contains? (:positions %) not-overlapped-positions))
+         (first)                                       ; {:id "3", :x 5, :y 5, :w 2, :h 2, :positions ([5 5] [5 6] [6 5] [6 6])}
+         (:id))))
+
 
