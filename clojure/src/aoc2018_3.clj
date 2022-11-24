@@ -162,6 +162,6 @@
     (->> claims                                        ; ({:id 1, :x 1, :y 1, :w 2, :h 2, :positions ([1 1] [1 2] ...)}...)
          (filter #(all-contains? (:positions %) not-overlapped-positions))
          (first)                                       ; {:id "3", :x 5, :y 5, :w 2, :h 2, :positions ([5 5] [5 6] [6 5] [6 6])}
-         (:id))))
+         (:id))))      ; small-input: 3, input: 116
 
 
