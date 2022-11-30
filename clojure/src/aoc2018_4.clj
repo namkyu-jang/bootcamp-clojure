@@ -33,14 +33,6 @@
 ;; "00:11"이 가장 빈번하게 잠들어 있던 시각이고, 그 때의 "분"은 11.
 ;; 그럼 답은 20 * 11 = 220.
 
-;; 용어: guard/id, duty, entry/record, month-day/date, find-most-minutes, total
-
-; 파싱해서 만들어낼 구조
-; records - date(시작인 경우 00:00으로 보정), id, type(start/end)
-
-; duties -  duty - 일자, guard, sleep[start, end-1]...   ;; 시간("00:")에 대한 정보는 제외하고, 깨어 있는 "분"만 관리하자.
-
-; guards: id(숫자), total-minutes, 가장 많이 중복되는 분은 그냥 계산해서 찾아내는 것으로
 
 (defn load-file [filename]
   (->> filename
