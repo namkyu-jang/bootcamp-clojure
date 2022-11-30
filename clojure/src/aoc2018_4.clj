@@ -153,6 +153,7 @@
 
 (comment
   (def simple-events (->> (load-file "resources/day4_small_input.txt")
+                          (sort)
                           (map parse-record)))
   simple-events
   (aggregate-duty-events simple-events)
@@ -177,13 +178,34 @@
        (sort) ; 파일이 시간순으로 되어 있지 않아 정렬함
        (map parse-record)))
 
+;; solution 1
 (comment
   (->>
     (let [{:keys [guards]} (aggregate-duty-events events)
           most-slept-guard (last (sort-by #(->> % (val) (:minutes) (count)) guards))
           [guard-id {:keys [minutes]}] most-slept-guard
            most-during-minute (->> (frequencies minutes) (sort-by val >) (ffirst))]
-         (* (read-string guard-id) most-during-minute))))
+         (* (read-string guard-id) most-during-minute))))   ; 26281
+
+
+;; solution 2
+(defn frequencies-guard [[guard-id {:keys [minutes]}]]
+  (let [freq-minutes (frequencies minutes)
+        most-minute-freq (->> (sort-by val > freq-minutes) (first))]
+    {:guard-id    (read-string guard-id)
+     :most-minute (first most-minute-freq)
+     :most-freq   (last most-minute-freq)
+     :total-sleep (count minutes)}))
+
+(comment
+  (->> (aggregate-duty-events events)
+       (:guards)
+       (map frequencies-guard)
+       (sort-by :total-sleep >)
+       (first)
+       ((juxt :guard-id :most-minute))
+       (apply *)))   ; 26281
+
 
 
 ;; 파트 2
@@ -193,3 +215,31 @@
 ;;
 ;; 찾아낸 가드의 ID와 분(시각 중 분)을 곱한 값은? (예시에서 99 * 45 = 4455)
 
+
+;; solution 1
+(comment
+  (->> (aggregate-duty-events events)
+       (:guards)
+       (map frequencies-guard)                 ; ({:guard-id 1973, :most-minute 37, :most-freq 18}, ...)
+       (sort-by :most-freq >)
+       (first)
+       ((juxt :guard-id :most-minute))
+       (apply *)))   ; 73001
+
+
+;; solution 2
+(defn find-most-guard-by [sort-by-key]
+  (->> (aggregate-duty-events events)
+       (:guards)
+       (map frequencies-guard)                 ; ({:guard-id 1973, :most-minute 37, :most-freq 18}, ...)
+       (sort-by sort-by-key >)
+       (first)))
+
+(comment
+  (->> (find-most-guard-by :total-sleep)
+       ((juxt :guard-id :most-minute))
+       (apply *))   ; 26281
+
+  (->> (find-most-guard-by :most-freq)
+       ((juxt :guard-id :most-minute))
+       (apply *)))   ; 73001
