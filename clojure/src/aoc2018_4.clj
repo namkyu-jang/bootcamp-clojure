@@ -236,10 +236,12 @@
        (first)))
 
 (comment
+  ;; part 1
   (->> (find-most-guard-by :total-sleep)
        ((juxt :guard-id :most-minute))
        (apply *))   ; 26281
 
+  ;; part 2
   (->> (find-most-guard-by :most-freq)
        ((juxt :guard-id :most-minute))
        (apply *)))   ; 73001
