@@ -1,5 +1,6 @@
 (ns aoc2018_5
   (:require [clojure.string :as string])
+  (:import (java.util.regex Pattern))
   (:require [clojure.java.io :as io]))
 ;; 파트 1
 ;; 입력: dabAcCaCBAcCcaDA
@@ -74,10 +75,11 @@
 (defn load-file [filename]
   (->> filename
        (slurp)))
+
 (def polymer-input
   (load-file "resources/day5_input.txt"))
-  ;"cgGfFBbCHhxxXBEebrnNRuUMYMmyyYqTtoOQyYmDbBeYd")
-  ;"dabAcCaCBAcCcaDA")
+
+(def polymer-simple-input "dabAcCaCBAcCcaDA")
 
 
 (defn reduce-polymer [polymer-input]
@@ -108,3 +110,46 @@
 ;; 주어진 문자열에서 한 유닛 (대문자와 소문자)을 전부 없앤 후 반응시켰을 때, 가장 짧은 문자열의 길이를 리턴하시오.
 ;; 예를 들어 dabAcCaCBAcCcaDA 에서 a/A를 없애고 모두 반응시키면 dbCBcD가 되고 길이는 6인데 비해,
 ;; 같은 문자열에서 c/C를 없애고 모두 반응시키면 daDA가 남고 길이가 4이므로 4가 가장 짧은 길이가 됨.
+
+;; dabAcCaCBAcCcaDA
+;; a/A 삭제 : dbcCCBcCcD 반응 -> dbCBcD
+;; c/C 삭제 : dabAaBAaDA 반응 -> daDA
+;;
+
+
+(comment
+  (string/replace "dabAcCaCBAcCcaDA" #"[aA]" "")
+  (string/replace "dabAcCaCBAcCcaDA" #"(?i)[a]" ""))
+
+
+(defn gen-a-to-z []
+  (let [a 97
+        z 122]
+    (map char (range a z))))
+
+(defn compile-re-ignore-case [c]
+  (Pattern/compile (format "(?i)[%s]" c)))
+
+
+(comment
+  (gen-a-to-z)
+  (sort '(1 2 6 3 4 5))
+  (->> (gen-a-to-z)
+       (map (fn [c]
+              (string/replace polymer-simple-input (compile-re-ignore-case c) "")))
+       (map reduce-polymer)
+       (sort)
+       (first)))
+
+
+;; solution
+(defn find-shortest-length-after-removing-all-units [input]
+  (->> (gen-a-to-z)
+       (map #(string/replace input (compile-re-ignore-case %) ""))
+       (map reduce-polymer)
+       (sort)
+       (first)))
+
+(comment
+  (find-shortest-length-after-removing-all-units polymer-simple-input) ; 4
+  (time (find-shortest-length-after-removing-all-units polymer-input))) ; 4876 (195 sec)
