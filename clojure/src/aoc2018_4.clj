@@ -163,16 +163,18 @@
              1)
            {"10" {:minutes '(1 2 3)}, "20" {:minutes '(1 2 3 4)}, "30" {:minutes '(3 4)}}))
 
-(comment
-  (+ 1 1)
-  {"10" {:minutes '(1 2 3)}, "20" {:minutes '(1 2 3 4)}, "30" {:minutes '(3 4)}})
+(def events
+  (->> (load-file "resources/day4_input.txt")
+       ;(load-file "resources/day4_small_input.txt")
+       (sort) ; 파일이 시간순으로 되어 있지 않아 정렬함
+       (map parse-record)))
 
 (comment
   (->>
-    (let [{:keys [guards]} (aggregate-duty-events simple-events)
+    (let [{:keys [guards]} (aggregate-duty-events events)
           most-slept-guard (last (sort-by #(->> % (val) (:minutes) (count)) guards))
           [guard-id {:keys [minutes]}] most-slept-guard
-           most-during-minute (->> (frequencies minutes) (sort-by val >) (first) (first))]
+           most-during-minute (->> (frequencies minutes) (sort-by val >) (ffirst))]
          (* (read-string guard-id) most-during-minute))))
 
 
