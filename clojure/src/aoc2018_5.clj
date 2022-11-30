@@ -34,11 +34,14 @@
   (def polymer-sample "dabAcCaCBAcCcaDA"))
 
 ;; 전진하며 두 문자씩 비교 (sliding window) :
-;;     [a*]  [*b c d e f]
-;;  -> [a b*]  [*c d e f]
-;;  -> [a b c*]  [*d e f]
-;; -> 반응할 수 있으면 소멸 -> -1 위치로 다시 이동
+;;     [a*]  [*b c d D e f]
+;;  -> [a b*]  [*c d D e f]
+;;  -> [a b c*]  [*d D e f]
+;; -> 반응할 수 있으면 소멸
+;;  -> [a b c d*]  [*D e f]
+;;  -> [a b c*]      [*e f]
 ;; -> 반응할 수 없으면 진행
+;;  -> [a b c e*]      [*f]
 
 ;(defn lowercase? [s]
 ;  (= s (string/lower-case s)))
@@ -75,9 +78,9 @@
   (load-file "resources/day5_input.txt"))
   ;"cgGfFBbCHhxxXBEebrnNRuUMYMmyyYqTtoOQyYmDbBeYd")
   ;"dabAcCaCBAcCcaDA")
-polymer-input
 
-(comment
+
+(defn reduce-polymer [polymer-input]
   (let [input (vec (seq polymer-input))]
     (reduce
       (fn [{:keys [left right]} _]
@@ -97,6 +100,8 @@ polymer-input
        :right (vec (rest input))}
       (range))))
 
+(comment
+  (time (reduce-polymer polymer-input))) ; 9386 (6.8 sec)
 
 
 ;; 파트 2
