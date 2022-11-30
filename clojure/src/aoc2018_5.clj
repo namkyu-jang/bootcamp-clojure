@@ -1,4 +1,6 @@
-(ns aoc2018_5)
+(ns aoc2018_5
+  (:require [clojure.string :as string])
+  (:require [clojure.java.io :as io]))
 ;; 파트 1
 ;; 입력: dabAcCaCBAcCcaDA
 
@@ -27,6 +29,73 @@
 ;; 가능한 모든 반응이 끝난 후에, 폴리머에는 10개(문자)의 유닛이 남았다.
 
 ;; 주어진 input 폴리머에서 모든 반응이 끝난 후, 최종으로 남는 유닛(문자)의 갯수는?
+
+(comment
+  (def polymer-sample "dabAcCaCBAcCcaDA"))
+
+;; 전진하며 두 문자씩 비교 (sliding window) :
+;;     [a*]  [*b c d e f]
+;;  -> [a b*]  [*c d e f]
+;;  -> [a b c*]  [*d e f]
+;; -> 반응할 수 있으면 소멸 -> -1 위치로 다시 이동
+;; -> 반응할 수 없으면 진행
+
+;(defn lowercase? [s]
+;  (= s (string/lower-case s)))
+;(defn uppercase? [s]
+;  (= s (string/upper-case s)))
+;(defn same-unit [s1 s2]
+;  (= (string/lower-case s1) (string/lower-case s2)))
+
+(defn destroyable-pair? [c1 c2]
+  (and (not= c1 c2)
+       (= (string/lower-case c1) (string/lower-case c2))))
+
+(comment
+  (not= "a" "a") ; false
+  (not= "a" "A") ; true
+  (not= "a" "b") ; true
+  (destroyable-pair? "a" "a") ; false
+  (destroyable-pair? "a" "b") ; false
+  (destroyable-pair? "a" "A") ; true
+  (destroyable-pair? "A" "a") ; true
+  ())
+
+(comment
+  (seq "dabAcCaCBAcCcaDA")
+  (type (partition 2 (seq "dabAcCaCBAcCcaDA")))
+  (vec (seq "dabAcCaCBAcCcaDA"))
+  (partition 2 (seq "dabAcCaCBAcCcaDA"))
+  (["a" "b" "c"] 2))
+
+(defn load-file [filename]
+  (->> filename
+       (slurp)))
+(def polymer-input
+  (load-file "resources/day5_input.txt"))
+  ;"cgGfFBbCHhxxXBEebrnNRuUMYMmyyYqTtoOQyYmDbBeYd")
+  ;"dabAcCaCBAcCcaDA")
+polymer-input
+
+(comment
+  (let [input (vec (seq polymer-input))]
+    (reduce
+      (fn [{:keys [left right]} _]
+        (cond
+          (= (count right) 0) (reduced (count left))          ; 끝까지 진행함
+          (= (count left) 0) {:left (conj left (first right)) ; 왼쪽 집합이 고갈되어 다시 seed 투입
+                              :right (rest right)}
+          :else (let [c1 (last left)
+                      c2 (first right)
+                      destroyable (destroyable-pair? c1 c2)]
+                  (if destroyable
+                    {:left (vec (drop-last left))             ; 반응/소멸
+                     :right (rest right)}
+                    {:left (conj left c2)                     ; 전진
+                     :right (rest right)}))))
+      {:left (conj [] (first input))
+       :right (vec (rest input))}
+      (range))))
 
 
 
