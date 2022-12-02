@@ -59,6 +59,151 @@
 
 ;; 주어진 입력으로 부터 무한하지 않은 가장 큰 영역의 크기를 구하시오.
 
+;; 필요한 정보들
+;; - coordinates: #{[x1 y1] [x2 y2] ...}
+;; - grid-size: [100, 100]
+;; - grid(point:closest-coordinate-or-nil): {[0 0] [a1 b1], [0 1] nil, [0 2] [a3 b7], ...}
+;; - infinite-coordinates: #{[x1 y1] [x2 y2] ...}
+
+(defn to-point [s]
+  (let [[_ x y] (re-matches #"(\d*), (\d*)" s)]
+    [(read-string x) (read-string y)]))
+
+(defn load-coordinates [filename]
+  (->> (io/resource filename)
+       (slurp)
+       (string/split-lines)
+       (map to-point)
+       (set)))
+
+(defn cal-grid-size [coordinates]
+  (->> (apply map max coordinates)
+       (map inc)))
+
+(defn gen-grid-points [[w h]]
+  (for [x (range 0 w)
+        y (range 0 h)]
+    [x y]))
+
+(defn cal-distance [[x1 y1] [x2 y2]]
+  (+ (abs (- x1 x2)) (abs (- y1 y2))))
+
+
+(defn find-closest-coordinate [point coordinates]
+  (let [coordinate-distance (->> coordinates
+                                 (map #(assoc {} % (cal-distance point %)))
+                                 (into {}))
+        min-distance (->> (sort-by val coordinate-distance) (first) (val))
+        closest-coordinates (->> coordinate-distance (filter #(= (val %) min-distance)))
+        found-count (count closest-coordinates)]
+    (when (= found-count 1) (ffirst closest-coordinates))))
+
+
+
+;(->> coordinates
+;     ;(map (fn [coordinate] {coordinate (cal-distance point coordinate)}))
+;     (map #(assoc {} % (cal-distance point %)))
+;     (into {}))
+
+(defn build-grid [coordinates points] ; point:closest-coordinate {[0 0] [a1 b1], [0 1] nil, [0 2] [a3 b7], ...}
+  (->> (map (fn [point]
+              {point (find-closest-coordinate point coordinates)})
+            points)
+       (into {})))
+
+
+;; 그리드의 경계에 있는 위치와 연결된 좌표는 무한 확장임. 그리드의 테두리를 돌면 됨.
+(defn find-infinite-coordinates [grid [w h]]
+  (let [tops (for [x (range 0 w)] [x 0])
+        bottoms (for [x (range 0 w)] [x (dec h)])
+        lefts (for [y (range 0 h)] [0 y])
+        rights (for [y (range 0 h)] [(dec w) y])
+        edges (set (concat tops bottoms lefts rights))] ; 테두리
+    (->> (select-keys grid edges)
+         (vals)
+         (keep identity) ; nil은 2개 이상의 좌표와 같은 거리
+         (set))))
+
+(defn find-largest-area [filename]
+  (let [coordinates (load-coordinates filename)       ; #{[8 9] [8 3] [1 1] [3 4] [5 5] [1 6]}
+        grid-size (cal-grid-size coordinates)         ; [8 9]
+        grid-points (gen-grid-points grid-size)       ; ([0 0] [0 1] [0 2] ...
+        grid (build-grid coordinates grid-points)     ; {[0 0] [a1 b1], [0 1] nil, [0 2] [a3 b7], ...}
+        infinite-coordinates (find-infinite-coordinates grid grid-size)] ; point:coordinate #{[1 1] [8 9] ...}
+    (->> grid
+         (filter #(not (contains? infinite-coordinates %))) ; grid에서 infinite가 아닌 것을 제외하고
+         (vals)                                             ; vals(closest coordinate)
+         (keep identity)                                    ; remove nil
+         (frequencies)
+         (sort-by val >)                                    ; sort by freq
+         (first)                                            ; min
+         (val))))                                           ; freq
+
+
+(comment
+  (abs -1)
+  (cal-distance [2 2] [1 1])
+  (cal-distance [1 1] [2 2])
+  (cal-distance [3 3] [1 5])
+  (re-matches #"(\d*), (\d*)" "123, 456")
+  (to-point "123, 456")
+  (apply map max '([6 1] [2 2] [3 4]))
+  (cal-grid-size '([6 1] [2 2] [3 4]))
+  (def coordinates-sample
+    (load-coordinates "day6_input_small.txt"))
+  coordinates-sample
+  (def grid-size (cal-grid-size coordinates-sample))
+  (gen-grid-points grid-size)
+  (->> coordinates-sample
+       (map to-point)))
+
+
+(comment
+  (def cords #{[8 9] [8 3] [1 1] [3 4] [5 5] [1 6]})
+  (find-n-distance-coordinates [1 1] 0 cords)
+  (find-n-distance-coordinates [1 1] 5 cords)
+  (find-n-distance-coordinates [1 1] 8 cords)
+  (find-n-distance-coordinates [0 5] 2 cords) ;;;
+  (find-closest-coordinate1 [0 0] cords)
+  (find-closest-coordinate [0 0] cords)
+  (find-closest-coordinate1 [0 1] cords)
+  (find-closest-coordinate1 [0 2] cords)
+  (find-closest-coordinate1 [0 3] cords)
+  (find-closest-coordinate1 [0 4] cords)
+  (find-closest-coordinate1 [0 5] cords) ;;;
+  (find-closest-coordinate1 [0 6] cords)
+  (find-closest-coordinate1 [1 1] cords)
+  (find-closest-coordinate1 [4 0] cords)
+  (find-closest-coordinate1 [5 0] cords)
+  (find-closest-coordinate1 [6 0] cords)
+  (find-closest-coordinate1 [7 0] cords)
+  (find-closest-coordinate1 [5 2] cords)
+  (def grid-points1 (gen-grid-points (cal-grid-size cords)))
+  grid-points1
+  (def grid-size1 (cal-grid-size cords))
+  grid-size1
+  (build-grid cords grid-points1)
+  (def grid1 (build-grid cords grid-points1))
+  (set (concat '([1 1] [2 2]) '([3 3] [2 2])))
+  (find-infinite-coordinates [] [3 3])
+  (find-infinite-coordinates grid1 grid-size1)
+  (select-keys {"a" 1 "b" 2 "c" 3} ["b" "c"])
+  (into {} '([1 1] [2 2]) '([3 3] [2 2]))
+  (merge {"a" 1 "b" 2} {"c" 3})
+  (keep identity [nil 1 2 nil 3])
+  (filter (fn [[key val]]
+            (complement #(contains? #{"a" "c"} key))) {"a" 1 "b" 2})
+  (not (contains? #{"a" "c"} "b"))
+  (not-any? #(contains? #{"a" "c"})  "b")
+  (find-largest-area "day6_input_small.txt")
+  (time (find-largest-area "day6_input.txt"))
+  (time (find-largest-area "day6_input_small.txt"))
+  (time (find-largest-area "day6_input_small2.txt"))
+  ())
+
+
+
+
 
 
 ;; 파트 2
